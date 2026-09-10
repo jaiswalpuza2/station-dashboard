@@ -1,0 +1,8 @@
+# Station — local config (contains API keys, never commit)
+js/config.js
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/

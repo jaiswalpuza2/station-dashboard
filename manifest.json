@@ -1,0 +1,24 @@
+{
+  "name": "Station — a live instrument panel",
+  "short_name": "Station",
+  "description": "Real-time weather, markets, and game player counts — styled as a brass instrument panel.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#12181F",
+  "theme_color": "#12181F",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

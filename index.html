@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Station — a live instrument panel</title>
+<meta name="description" content="A real-time weather, markets, and games dashboard styled as a meteorological instrument panel." />
+<meta name="theme-color" content="#12181F" />
+<link rel="manifest" href="manifest.json" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <div class="grain"></div>
+
+  <header class="header">
+    <div class="header__mark">
+      <svg class="header__glyph" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <circle cx="20" cy="20" r="2" fill="currentColor"/>
+        <line x1="20" y1="4" x2="20" y2="9" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="20" y1="31" x2="20" y2="36" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="4" y1="20" x2="9" y2="20" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="31" y1="20" x2="36" y2="20" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="20" y1="20" x2="27" y2="13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <div class="header__title">
+        <h1>Station</h1>
+        <p>a live instrument panel for sky, market &amp; game</p>
+      </div>
+    </div>
+
+    <!-- Panel switcher — Weather / Markets / Games -->
+    <div class="panel-tabs" role="tablist" aria-label="Switch panel">
+      <button
+        id="tab-weather"
+        class="panel-tab"
+        role="tab"
+        aria-selected="true"
+        aria-controls="weather-panel"
+      >Weather</button>
+      <button
+        id="tab-markets"
+        class="panel-tab"
+        role="tab"
+        aria-selected="false"
+        aria-controls="markets-panel"
+      >Markets</button>
+      <button
+        id="tab-games"
+        class="panel-tab"
+        role="tab"
+        aria-selected="false"
+        aria-controls="games-panel"
+      >Games</button>
+    </div>
+
+    <!-- Place search — shown only on Weather panel (hidden via JS) -->
+    <form class="search" id="search-form" role="search" autocomplete="off">
+      <label for="search-input" class="sr-only">Search for a place</label>
+      <input
+        type="text"
+        id="search-input"
+        name="q"
+        placeholder="Find a place — try "Kathmandu" or "Lisbon""
+        aria-expanded="false"
+        aria-controls="search-results"
+      />
+      <button type="submit" aria-label="Search">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+          <circle cx="8.5" cy="8.5" r="6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <line x1="13" y1="13" x2="18" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <ul id="search-results" class="search__results" hidden></ul>
+    </form>
+  </header>
+
+  <!-- Geolocation status note (shown/hidden by app.js) -->
+  <div id="geo-note" class="geo-note" hidden aria-live="polite"></div>
+
+  <!-- Offline / stale-data banner (shown/hidden by app.js when SW serves cached API responses) -->
+  <div id="offline-banner" class="offline-banner" hidden aria-live="polite">
+    <div class="offline-banner__inner">
+      <svg viewBox="0 0 13 13" fill="none" aria-hidden="true">
+        <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="6.5" y1="3.5" x2="6.5" y2="7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="6.5" cy="9" r="0.7" fill="currentColor"/>
+      </svg>
+      <span>Showing the last reading — you're offline.</span>
+    </div>
+  </div>
+
+  <!-- The Logbook — auto-written strip of notable events across all tracks -->
+  <div class="logbook" id="logbook">
+    <div class="logbook__strip" aria-expanded="false" id="logbook-strip">
+      <div class="logbook__peek" id="logbook-peek" role="button" tabindex="0"
+           aria-controls="logbook-entries" aria-label="Logbook — click to expand">
+        <span class="logbook__empty-label" id="logbook-peek-inner">No entries yet.</span>
+        <span class="logbook__chevron" aria-hidden="true">▾</span>
+      </div>
+      <div class="logbook__entries" id="logbook-entries" role="log" aria-live="polite" aria-label="Logbook entries"></div>
+    </div>
+  </div>
+
+  <main id="main">
+
+    <!-- ================================================================
+         WEATHER PANEL
+         ================================================================ -->
+    <div id="weather-panel" role="tabpanel" aria-labelledby="tab-weather">
+
+      <section class="panel-hero" id="panel-hero" aria-live="polite">
+        <!-- populated by app.js: state variants (loading / error / data) -->
+      </section>
+
+      <section class="dial-rail" id="dial-rail" aria-label="Current instrument readings">
+        <!-- 4 dial instruments populated by app.js -->
+      </section>
+
+      <section class="recorder" aria-label="24 hour temperature trace">
+        <div class="recorder__head">
+          <h2>Temperature trace</h2>
+          <p id="recorder-range">next 24 hours</p>
+        </div>
+        <div class="recorder__paper" id="recorder-paper">
+          <canvas id="strip-chart" aria-hidden="true"></canvas>
+          <div id="recorder-status" class="recorder__status"></div>
+        </div>
+      </section>
+
+      <section class="forecast" aria-label="Seven day forecast">
+        <div class="forecast__head">
+          <h2>Coming days</h2>
+        </div>
+        <div class="forecast__rail" id="forecast-rail">
+          <!-- forecast tickets populated by app.js -->
+        </div>
+      </section>
+
+      <footer class="footer">
+        <p id="footer-updated">—</p>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+          <button id="unit-toggle" class="unit-toggle" type="button" aria-pressed="false">
+            <span data-unit="metric">°C</span>
+            <span class="unit-toggle__divider">/</span>
+            <span data-unit="imperial">°F</span>
+          </button>
+          <button
+            id="theme-toggle"
+            class="theme-toggle"
+            type="button"
+            aria-pressed="false"
+            aria-label="Switch to light theme"
+          >
+            <svg class="theme-toggle__icon" viewBox="0 0 13 13" fill="none" aria-hidden="true"></svg>
+            <span class="theme-toggle__label">Light</span>
+          </button>
+        </div>
+      </footer>
+
+    </div><!-- /weather-panel -->
+
+    <!-- ================================================================
+         MARKETS PANEL
+         ================================================================ -->
+    <div id="markets-panel" role="tabpanel" aria-labelledby="tab-markets" hidden>
+
+      <div class="markets-head">
+        <div>
+          <h2>Market instruments</h2>
+          <p id="markets-updated" class="markets-updated">—</p>
+        </div>
+        <form class="watchlist-form" id="watchlist-form" autocomplete="off">
+          <label for="watchlist-input" class="sr-only">Add ticker symbol</label>
+          <input
+            type="text"
+            id="watchlist-input"
+            name="symbol"
+            placeholder="Add symbol — e.g. NVDA"
+            maxlength="12"
+            aria-label="Ticker symbol"
+          />
+          <button type="submit" aria-label="Add symbol">+</button>
+        </form>
+      </div>
+
+      <div class="ticker-rail" id="ticker-rail" aria-live="polite"></div>
+
+      <footer class="markets-footer">
+        <span></span>
+        <button
+          id="theme-toggle-markets"
+          class="theme-toggle"
+          type="button"
+          aria-pressed="false"
+          aria-label="Switch to light theme"
+          onclick="document.getElementById('theme-toggle').click()"
+        >
+          <svg class="theme-toggle__icon" viewBox="0 0 13 13" fill="none" aria-hidden="true"></svg>
+          <span class="theme-toggle__label">Light</span>
+        </button>
+      </footer>
+
+    </div><!-- /markets-panel -->
+
+    <!-- ================================================================
+         GAMES PANEL
+         ================================================================ -->
+    <div id="games-panel" role="tabpanel" aria-labelledby="tab-games" hidden>
+
+      <div class="games-head">
+        <div>
+          <h2>Steam player counts</h2>
+          <p id="games-updated" class="games-updated">—</p>
+        </div>
+        <!-- Game search / add form -->
+        <form class="game-search-form" id="game-search-form" autocomplete="off">
+          <label for="game-search-input" class="sr-only">Search for a game to track</label>
+          <input
+            type="text"
+            id="game-search-input"
+            name="game"
+            placeholder="Search game or paste appid"
+            aria-expanded="false"
+            aria-controls="game-search-results"
+          />
+          <button type="submit" aria-label="Add game">+</button>
+          <ul id="game-search-results" class="game-search__results" hidden></ul>
+        </form>
+      </div>
+
+      <!-- Game cards — one per tracked game, populated by app.js -->
+      <div class="game-rail" id="game-rail" aria-live="polite"></div>
+
+      <footer class="games-footer">
+        <button
+          id="theme-toggle-games"
+          class="theme-toggle"
+          type="button"
+          aria-pressed="false"
+          aria-label="Switch to light theme"
+          onclick="document.getElementById('theme-toggle').click()"
+        >
+          <svg class="theme-toggle__icon" viewBox="0 0 13 13" fill="none" aria-hidden="true"></svg>
+          <span class="theme-toggle__label">Light</span>
+        </button>
+      </footer>
+
+    </div><!-- /games-panel -->
+
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+
+  <!-- Mirror the main theme toggle into every panel footer toggle -->
+  <script type="module">
+    function syncThemeToggle(sourceId, mirrorId) {
+      const source = document.getElementById(sourceId);
+      const mirror = document.getElementById(mirrorId);
+      if (!source || !mirror) return;
+      const sync = () => {
+        mirror.setAttribute('aria-pressed', source.getAttribute('aria-pressed'));
+        mirror.setAttribute('aria-label',   source.getAttribute('aria-label'));
+        mirror.querySelector('.theme-toggle__icon').innerHTML =
+          source.querySelector('.theme-toggle__icon').innerHTML;
+        mirror.querySelector('.theme-toggle__label').textContent =
+          source.querySelector('.theme-toggle__label').textContent;
+      };
+      new MutationObserver(sync).observe(source, { attributes: true, subtree: true, childList: true });
+    }
+    syncThemeToggle('theme-toggle', 'theme-toggle-markets');
+    syncThemeToggle('theme-toggle', 'theme-toggle-games');
+  </script>
+
+  <!-- Service worker registration (PWA / offline support) -->
+  <script src="js/register-sw.js"></script>
+
+</body>
+</html>
