@@ -20,7 +20,8 @@ const CACHE_API     = 'station-api-v1';
 // All static assets to precache on install.
 // Paths are relative to the service worker's own location (project root).
 const STATIC_ASSETS = [
-  'index.html',
+  '/',             // the root URL (what the PWA start_url resolves to on Vercel)
+  'index.html',    // also cache by filename for direct requests
   'manifest.json',
   'css/styles.css',
   'js/app.js',
